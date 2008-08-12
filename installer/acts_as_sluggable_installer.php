@@ -4,8 +4,8 @@ define('AK_AAS_PLUGIN_FILES_DIR', AK_APP_PLUGINS_DIR.DS.'acts_as_sluggable'.DS.'
 class ActsAsSluggableInstaller extends AkInstaller
 {
 
-    var $_newModelMethods = array('getSluggableSlug'=>'
-    function getSluggableSlug() {
+    var $_newModelMethods = array('get_slug'=>'
+    function get_slug() {
         if (isset($this->sluggable) && method_exists($this->sluggable,"getSlug")) {
             return $this->sluggable->getSlug();
         }
