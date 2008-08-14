@@ -99,23 +99,10 @@ class ActsAsSluggable extends AkObserver
     
     function _getUrlSafeName(&$record,$name)
     {
+        
         $safe_name = strtolower($name);
-        $renderTo = array();
-        $unsafe = explode(" ", "À Á Â Ã Ä Å A A Ç C C D D Ð È É Ê Ë E E G Ì Í
-        Î Ï I L L L Ñ N N Ò Ó Ô Õ Ö Ø O R R S S S T T Ù Ú Û Ü U U Ý Z Z Z à á â ã ä
-        å a a ç c c d d è é ê ë e e g ì í î ï i l l l ñ n n ð ò ó ô õ ö ø o r r s s
-        s t t ù ú û ü u u ý ÿ z z z");
-        $safe = explode(" ", "A A A A A A A A C C C D D D E E E E E E G I I
-        I I I L L L N N N O O O O O O O R R S S S T T U U U U U U Y Z Z Z a a a a a
-        a a a c c c d d e e e e e e g i i i i i l l l ny n n o o o o o o o o r r s s
-        s t t u u u u u u y y z z z");
-        for ($i=0; $i<count($unsafe); $i++) {
-            $renderTo[$unsafe[$i]] = $safe[$i];
-        }
-        $ligatures = array("Æ"=>"Ae", "æ"=>"ae",
-                           "ß"=>"ss");
-        $umlaute = array("Ä"=>"Ae", "ä"=>"ae", "Ö"=>"Oe", "ö"=>"oe", "Ü"=>"Ue",
-                         "ü"=>"ue");
+        $safe_name = str_replace(array('ñ','ä','ü','ö','ß'),array('ny','ae','ue','oe','ss'), $safe_name);
+        $safe_name = AkInflector::unaccent($safe_name);
         $specialCharsUnsafe =array("¡","!"," ","`","]","[","~","^","\\","|","}","{","%","#",">","<",
                                        "'",'"',"",'@','$','&',
                                        ',','/',':',';','=','?');
@@ -123,21 +110,14 @@ class ActsAsSluggable extends AkObserver
                                   "","",'-','-at-','-dollar-','-and-',
                                   '-comma-','-or-','-colon-','-semicolon-','-equals-','-question-');
         
-        for ($i=0; $i<count($specialCharsUnsafe); $i++) {
-            $renderTo[$specialCharsUnsafe[$i]] = $specialCharsSafe[$i];
-        }
-        $renderTo = array_merge($renderTo, $umlaute);
-        $renderTo = array_merge($renderTo, $ligatures);
-        $renderTo = array_merge($renderTo, $ligatures);
-
-        $keys = array_keys($renderTo);
-        $values = array_values($renderTo);
+        
         foreach (array_keys($record->sluggable->custom_replacements) as $customKey) {
-            array_unshift($keys,$customKey);
-            array_unshift($values,$record->sluggable->custom_replacements[$customKey]);
+            array_unshift($specialCharsUnsafe,$customKey);
+            array_unshift($specialCharsSafe,$record->sluggable->custom_replacements[$customKey]);
         }
-        $safe_name = str_replace($keys,
-                                 $values,
+        
+        $safe_name = str_replace($specialCharsUnsafe,
+                                 $specialCharsSafe,
                                  $safe_name);
         $safe_name = preg_replace('/-+/','-',$safe_name);
         $safe_name = trim($safe_name,'-');
