@@ -7,9 +7,7 @@
 // | Copyright (c) 2002-2007, Akelos Media, S.L.  & Bermi Ferrer Martinez |
 // | Released under the GNU Lesser General Public License, see LICENSE.txt|
 // +----------------------------------------------------------------------+
-/**
- see http://svn.viney.net.nz/things/rails/plugins/acts_as_taggable_on_steroids/lib/acts_as_taggable.rb
-*/
+
 /**
 * @package ActiveRecord
 * @subpackage Behaviours
