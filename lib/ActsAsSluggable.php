@@ -81,7 +81,7 @@ class ActsAsSluggable extends AkObserver
     
     function _getUniqueSlug(&$record, $slug)
     {
-        $tries = 0;
+        $tries = 1;
         $orgSlug = $slug;
         while (($found = $record->findFirst($this->_slug_target.' = ? AND id <> ?',$slug,$record->id==null?-1:$record->id))) {
             $slug =$orgSlug.'-'.$tries;
