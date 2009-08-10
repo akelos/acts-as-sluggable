@@ -23,6 +23,7 @@ class MyModel extends ActiveRecord
 }
 
 Will take the value of $myModel->name and generate $myModel->slug.
+The ActiveRecord must of course have the column defined in "slug_target"
 
 class MyModel extends ActiveRecord
 {

@@ -23,10 +23,12 @@ class ActsAsSluggable extends AkObserver
 {
     var $_instance;
     var $_slug_source;
+    var $_slug_scope = false;
     var $_slug_target;
     var $_validated = false;
+    var $_slug_excludes = array();
     var $custom_replacements = array();
-
+    
     function ActsAsSluggable(&$ActiveRecordInstance, $options = array())
     {
         $this->_instance = &$ActiveRecordInstance;
@@ -35,6 +37,12 @@ class ActsAsSluggable extends AkObserver
     
     function init($options = array())
     {
+        if(isset($options['slug_scope']) && $this->_instance->hasColumn($options['slug_scope'])) {
+            $this->_slug_scope = $options['slug_scope'];
+        }
+        if(isset($options['exclude'])) {
+            $this->_slug_excludes = (array)$options['exclude'];
+        }
         if (isset($options['slug_source'])) {
             $this->_slug_source = $options['slug_source'];
         }
@@ -48,7 +56,11 @@ class ActsAsSluggable extends AkObserver
             $this->observe(&$this->_instance);
         }
     }
-
+    function afterInstantiate(&$record)
+    {
+        $record->__original_slug = !empty($record->{$this->_slug_target})?$record->{$this->_slug_target}:null;
+        return true;
+    }
     function afterValidation(&$record)
     {
         return $this->_createSlug(&$record);
@@ -64,26 +76,38 @@ class ActsAsSluggable extends AkObserver
         } else if (isset($record->{$this->_slug_source})) {
             $sourceData = $record->{$this->_slug_source};
         }
+        
         if (!empty($sourceData) && $record->hasColumn($this->_slug_target)) {
             $slug = $this->_getUrlSafeName(&$record,$sourceData);
-            $slug = $this->_getUniqueSlug(&$record, $slug);
+            if(!empty($this->_slug_scope)) {
+                $slug = $this->_getScopedUniqueSlug(&$record, $slug);
+            } else {
+                $slug = $this->_getUniqueSlug(&$record, $slug);
+            }
         }
         return $slug;
     }
+
     function _createSlug(&$record)
     {
         $slug = $this->_generateSlug(&$record);
         if ($slug!==false) {
+            if(!empty($record->__original_slug) && $slug != $record->__original_slug) {
+                $this->_registerChangedSlug($record);
+            }
             $record->set($this->_slug_target,$slug);
         }
         return true;
     }
-    
+    function _registerChangedSlug(&$record)
+    {
+        $this->log('message','Record:'.$record->getType().'(#'.$record->getId().') has changed the slug from '.$record->__original_slug.' to '.$record->{$this->_slug_target});
+    }
     function _getUniqueSlug(&$record, $slug)
     {
         $tries = 1;
         $orgSlug = $slug;
-        while (($found = $record->findFirst($this->_slug_target.' = ? AND id <> ?',$slug,$record->id==null?-1:$record->id))) {
+        while (in_array($slug,$this->_slug_excludes) || ($found = $record->findFirst(array('conditions'=>array($this->_slug_target.' = ? AND id <> ?',$slug,$record->id==null?-1:$record->id))))) {
             $slug =$orgSlug.'-'.$tries;
             $tries++;
             if($tries>20) {
@@ -94,7 +118,21 @@ class ActsAsSluggable extends AkObserver
         return $slug;
         
     }
-    
+    function _getScopedUniqueSlug(&$record, $slug)
+    {
+        $tries = 1;
+        $orgSlug = $slug;
+        while (in_array($slug,$this->_slug_excludes) || ($found = $record->findFirst(array('conditions'=>array($this->_slug_target.' = ? AND id <> ? AND '.$this->_slug_scope.' = ?',$slug,$record->id==null?-1:$record->id,$record->{$this->_slug_scope}))))) {
+            $slug =$orgSlug.'-'.$tries;
+            $tries++;
+            if($tries>20) {
+                $slug = $orgSlug.'-'.md5(time());
+                break;
+            }
+        }
+        return $slug;
+        
+    }
     function _getUrlSafeName(&$record,$name)
     {
         
